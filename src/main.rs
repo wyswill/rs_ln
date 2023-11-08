@@ -14,7 +14,7 @@ fn main() {
         .expect("取消选择文件夹");
     println!("被链接的目录 {}", link_path.display());
 
-    fs::remove_dir(link_path.as_path()).unwrap();
+    fs::remove_dir_all(link_path.as_path()).unwrap();
 
     match symlink(target_path.as_path(), link_path.as_path()) {
         Ok(_) => println!("符号链接创建成功！"),
