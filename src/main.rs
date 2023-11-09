@@ -1,53 +1,61 @@
-// use rfd::FileDialog;
-// use std::{env::args, fs, os::unix::fs::symlink};
-// fn main() {
-//     let input_args: Vec<String> = args().collect();
-//     println!("input_args {:#?}", input_args);
-//     // let root_path = "/Users/wangyansong/project";
+use clap::Parser;
+use rfd::FileDialog;
+use std::{
+    os::unix::fs::symlink,
+    path::{self, PathBuf}, fs,
+};
+#[derive(Parser, Debug)]
+#[command(
+    author = "wyswill",
+    version = "0.0.1",
+    about = "rs_ln",
+    long_about = "ln on rust"
+)]
+struct Args {
+    #[arg(short, long, help = "指定源目录")]
+    source: String,
 
-//     // let target_path = FileDialog::new()
-//     //     .set_directory(root_path)
-//     //     .pick_folder()
-//     //     .expect("取消选择文件夹");
-//     // println!("要链接的目标目录 {}", target_path.display());
-//     // let link_path = FileDialog::new()
-//     //     .set_directory(root_path)
-//     //     .pick_folder()
-//     //     .expect("取消选择文件夹");
-//     // println!("被链接的目录 {}", link_path.display());
+    #[arg(short, long, help = "指定目标目录")]
+    target: String,
 
-//     // fs::remove_dir_all(link_path.as_path()).unwrap();
-
-//     // match symlink(target_path.as_path(), link_path.as_path()) {
-//     //     Ok(_) => println!("符号链接创建成功！"),
-//     //     Err(e) => println!("创建符号链接时出错: {:?}", e),
-//     // }
-// }
-
-use std::process::exit;
-
-use args::{Args, ArgsError};
-
-extern crate args;
-fn main() {
-    match prase(std::env::args().collect()) {
-        Ok(_) => println!("Successfully parsed args"),
-        Err(error) => {
-            println!("{}", error);
-            exit(1);
-        }
-    };
+    #[arg(short, long, help = "使用弹窗选择目录", default_value_t = false)]
+    watch_mode: bool,
 }
 
-fn prase(input: Vec<String>) -> Result<(), ArgsError> {
-    let mut args = Args::new("rs_ln", "rs ln");
-    args.flag("h", "help", "Print the usage menu");
-    args.parse(input);
-    let help = args.value_of("help")?;
-    if help {
-        args.full_usage();
-        return Ok(());
+fn main() {
+    let args = Args::parse();
+    let sp = path::Path::new(&args.source);
+    let tp = path::Path::new(&args.target);
+    if !sp.exists() {
+        panic!("源路径错误!");
+    }
+    if !tp.exists() {
+        panic!("目标路径错误!");
     }
 
-    return Ok(());
+    if args.watch_mode {
+        let target_path = FileDialog::new()
+            .set_directory(args.source.clone())
+            .pick_folder()
+            .expect("取消选择文件夹");
+        create_symlink(PathBuf::from(args.source.clone()), target_path);
+    } else {
+        create_symlink(
+            PathBuf::from(args.source.clone()),
+            PathBuf::from(args.target.clone()),
+        );
+    }
+}
+
+fn create_symlink(source_path: PathBuf, target_path: PathBuf) {
+    fs::remove_dir_all(&source_path).unwrap();
+    println!(
+        "sp : {}, tp :{}",
+        source_path.as_os_str().to_str().unwrap(),
+        target_path.as_os_str().to_str().unwrap()
+    );
+    match symlink(source_path, target_path) {
+        Ok(_) => println!("符号链接创建成功！"),
+        Err(e) => println!("创建符号链接时出错: {:?}", e),
+    }
 }
