@@ -1,8 +1,9 @@
-use clap::Parser;
+use clap::{Parser};
 use rfd::FileDialog;
 use std::{
+    fs,
     os::unix::fs::symlink,
-    path::{self, PathBuf}, fs,
+    path::{self, PathBuf},
 };
 #[derive(Parser, Debug)]
 #[command(
@@ -25,7 +26,7 @@ struct Args {
 fn main() {
     let args = Args::parse();
     let sp = path::Path::new(&args.source);
-    let tp = path::Path::new(&args.target);
+    let tp: &path::Path = path::Path::new(&args.target);
     if !sp.exists() {
         panic!("源路径错误!");
     }
