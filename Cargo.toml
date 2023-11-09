@@ -9,4 +9,3 @@ edition = "2021"
 clap = { version = "4.2.1", features = ["derive"] }
 console = "0.15.5"
 rfd = "0.12.1"
-args = "2.0"
