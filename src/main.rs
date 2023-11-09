@@ -1,7 +1,7 @@
-use clap::{Parser};
+use clap::Parser;
 use rfd::FileDialog;
 use std::{
-    fs,
+    env, fs,
     os::unix::fs::symlink,
     path::{self, PathBuf},
 };
@@ -24,19 +24,18 @@ struct Args {
 }
 
 fn main() {
+    let work_space = env::current_dir().expect("获取当前目录失败");
+    println!("work_space {}", work_space.to_str().unwrap());
+
     let args = Args::parse();
     let sp = path::Path::new(&args.source);
-    let tp: &path::Path = path::Path::new(&args.target);
     if !sp.exists() {
         panic!("源路径错误!");
-    }
-    if !tp.exists() {
-        panic!("目标路径错误!");
     }
 
     if args.watch_mode {
         let target_path = FileDialog::new()
-            .set_directory(args.source.clone())
+            .set_directory(work_space)
             .pick_folder()
             .expect("取消选择文件夹");
         create_symlink(PathBuf::from(args.source.clone()), target_path);
@@ -49,7 +48,9 @@ fn main() {
 }
 
 fn create_symlink(source_path: PathBuf, target_path: PathBuf) {
-    fs::remove_dir_all(&source_path).unwrap();
+    if target_path.exists() {
+        fs::remove_dir_all(&target_path).unwrap();
+    }
     println!(
         "sp : {}, tp :{}",
         source_path.as_os_str().to_str().unwrap(),
