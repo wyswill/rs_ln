@@ -8,4 +8,4 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.2.1", features = ["derive"] }
 console = "0.15.5"
-rfd = "0.12.1"
+rfd = "0.14.1"

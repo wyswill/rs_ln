@@ -1,49 +1,59 @@
-use clap::Parser;
+use clap::{value_parser, Arg, ArgAction, Command};
 use rfd::FileDialog;
 use std::{
-    env, fs,
-    os::unix::fs::symlink,
+    env::{self},
+    fs, os,
     path::{self, PathBuf},
 };
-#[derive(Parser, Debug)]
-#[command(
-    author = "wyswill",
-    version = "0.0.1",
-    about = "rs_ln",
-    long_about = "ln on rust"
-)]
-struct Args {
-    #[arg(short, long, help = "指定源目录")]
-    source: String,
-
-    #[arg(short, long, help = "指定目标目录")]
-    target: String,
-
-    #[arg(short, long, help = "使用弹窗选择目录", default_value_t = false)]
-    watch_mode: bool,
-}
 
 fn main() {
     let work_space = env::current_dir().expect("获取当前目录失败");
     println!("work_space {}", work_space.to_str().unwrap());
 
-    let args = Args::parse();
-    let sp = path::Path::new(&args.source);
+    let matches = Command::new("rs_ln")
+        .about("rs_ln")
+        .author("wyswill")
+        .long_about("ln tool in rust")
+        .args([
+            Arg::new("source")
+                .short('s')
+                .required(true)
+                .value_parser(value_parser!(String))
+                .action(ArgAction::Set)
+                .help("source_dir"),
+            Arg::new("target")
+                .short('t')
+                .required(true)
+                .value_parser(value_parser!(String))
+                .help("target_dir"),
+            Arg::new("open")
+                .short('o')
+                .value_parser(value_parser!(bool))
+                .required(false)
+                .help("open a dialog"),
+        ])
+        .get_matches();
+    let source_path = matches.get_one::<String>("source").unwrap();
+    let target_path = matches.get_one::<String>("target").unwrap();
+    let open_dialog = matches.try_get_one::<bool>("open").unwrap();
+    println!("source {}  target  {} ", source_path, target_path);
+    let sp = path::Path::new(source_path);
     if !sp.exists() {
         panic!("源路径错误!");
     }
 
-    if args.watch_mode {
+    if let Some(_is_open) = open_dialog {
+        println!(
+            "source {}  target  {} open_dialog {}",
+            source_path, target_path, _is_open
+        );
         let target_path = FileDialog::new()
             .set_directory(work_space)
             .pick_folder()
             .expect("取消选择文件夹");
-        create_symlink(PathBuf::from(args.source.clone()), target_path);
+        create_symlink(PathBuf::from(source_path), target_path);
     } else {
-        create_symlink(
-            PathBuf::from(args.source.clone()),
-            PathBuf::from(args.target.clone()),
-        );
+        create_symlink(PathBuf::from(source_path), PathBuf::from(target_path));
     }
 }
 
@@ -56,8 +66,13 @@ fn create_symlink(source_path: PathBuf, target_path: PathBuf) {
         source_path.as_os_str().to_str().unwrap(),
         target_path.as_os_str().to_str().unwrap()
     );
-    match symlink(source_path, target_path) {
-        Ok(_) => println!("符号链接创建成功！"),
-        Err(e) => println!("创建符号链接时出错: {:?}", e),
+    match std::env::consts::OS {
+        "linux" => println!("This is Linux!"),
+        "macos" => {}
+        "windows" => match os::windows::fs::symlink_dir(source_path, target_path) {
+            Ok(_) => println!("符号链接创建成功！"),
+            Err(e) => println!("创建符号链接时出错: {:?}", e),
+        },
+        _ => println!("Unknown OS"),
     }
 }
