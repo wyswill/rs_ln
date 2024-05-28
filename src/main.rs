@@ -8,7 +8,7 @@ use std::{
 
 fn main() {
     let work_space = env::current_dir().expect("获取当前目录失败");
-    println!("work_space {}", work_space.to_str().unwrap());
+    println!("work_space {}", style(work_space.to_str().unwrap()).cyan());
 
     let matches = Command::new("rs_ln")
         .about("rs_ln")
